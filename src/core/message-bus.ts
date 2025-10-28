@@ -6,8 +6,6 @@ export type Subscriber = (
   meta: { from?: string; reply?: (resp: any) => void; topic: string }
 ) => void | Promise<void>;
 
-type MessageHandler<T = any> = (payload: T) => Promise<void> | void;
-
 type MiddlewareContext = {
   topic: string;
   payload: any;

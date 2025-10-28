@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 import { Framework } from '../dist/src/core/framework.js';
-// Note: this script expects TypeScript compiled to dist via `npm run build`
 
 async function main(){
   const fw = new Framework();
   await fw.init();
   console.log('Framework initialized');
 
-  // load demo plugin from local file URL
   const manifest = { name: 'demo-plugin', version: '0.0.1', entry: 'file://' + new URL('../src/plugins/demo-plugin/index.js', import.meta.url).pathname, capabilities: ['logger'], integrity: null };
   const grants = fw.capabilityManager.grantCapabilities(manifest.capabilities || [], manifest.name).filter(g=>g.granted).map(g=>({ name:g.name, context:g.context }));
   const controller = await fw.sandboxManager.startSandboxedPlugin(manifest.entry, grants, manifest);

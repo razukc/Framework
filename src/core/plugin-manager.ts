@@ -62,7 +62,9 @@ export class PluginManager {
           await ctrl[method]();
         }
       } catch (err) {
-        throw err;
+        // ensure we extract useful message without assuming err shape
+        const msg = (err && (err as any).message) ? (err as any).message : String(err);
+        throw new Error(msg);
       }
     };
 
@@ -71,7 +73,7 @@ export class PluginManager {
         try {
           await safeCall(old.controller, 'onDeactivate');
         } catch (err) {
-          console.warn(`[PluginManager] Warning: onDeactivate failed for ${pluginName}:`, err);
+          console.warn(`[PluginManager] Warning: onDeactivate failed for ${pluginName}:`, String(err));
         }
       }
 
@@ -81,15 +83,15 @@ export class PluginManager {
         try {
           await safeCall(old.controller, 'onUnload');
         } catch (err) {
-          console.error(`[PluginManager] Failed to unload old plugin ${pluginName}; rolling back.`, err);
+          console.error(`[PluginManager] Failed to unload old plugin ${pluginName}; rolling back.`, String(err));
           try {
             await safeCall(sandboxController, 'onDeactivate');
             if (typeof sandboxController.terminate === 'function') sandboxController.terminate();
-          } catch (e) { console.error('[PluginManager] rollback: failed to stop new controller', e); }
+          } catch (e) { console.error('[PluginManager] rollback: failed to stop new controller', String(e)); }
 
-          try { await safeCall(old.controller, 'onActivate'); } catch (e) { console.error('[PluginManager] rollback: failed to reactivate old controller', e); }
+          try { await safeCall(old.controller, 'onActivate'); } catch (e) { console.error('[PluginManager] rollback: failed to reactivate old controller', String(e)); }
 
-          throw new Error(`Failed to unload previous plugin: ${err?.message || err}`);
+          throw new Error(`Failed to unload previous plugin: ${String(err)}`);
         }
       }
 
@@ -109,7 +111,7 @@ export class PluginManager {
       console.log(`[PluginManager] Replaced plugin ${pluginName} with new sandboxed version ${manifest?.version}`);
       return true;
     } catch (err) {
-      console.error(`[PluginManager] replaceWithSandboxed failed for ${pluginName}:`, err);
+      console.error(`[PluginManager] replaceWithSandboxed failed for ${pluginName}:`, String(err));
       try {
         if (sandboxController) {
           try { await safeCall(sandboxController, 'onDeactivate'); } catch (_) {}
@@ -121,7 +123,7 @@ export class PluginManager {
           await safeCall(old.controller, 'onActivate');
           this.plugins.set(pluginName, old);
         } catch (e) {
-          console.error('[PluginManager] Failed to reactivate previous plugin after replace failure', e);
+          console.error('[PluginManager] Failed to reactivate previous plugin after replace failure', String(e));
         }
       }
       throw err;
@@ -133,10 +135,10 @@ export class PluginManager {
     if (!rec) return;
     try {
       if (rec.controller && typeof rec.controller.onDeactivate === 'function') await rec.controller.onDeactivate();
-    } catch (e) { console.warn('[PluginManager] uninstall deactivation error', e); }
+    } catch (e) { console.warn('[PluginManager] uninstall deactivation error', String(e)); }
     try {
       if (rec.controller && typeof rec.controller.onUnload === 'function') await rec.controller.onUnload();
-    } catch (e) { console.warn('[PluginManager] uninstall unload error', e); }
+    } catch (e) { console.warn('[PluginManager] uninstall unload error', String(e)); }
     if (rec.isSandboxed && this.hostBridge) {
       try { this.hostBridge.unregisterWorker(name); } catch (e) {}
     }

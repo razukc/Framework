@@ -60,7 +60,8 @@ export class CapabilityAwareSandbox {
 
   private async createWorkerFromSourceBytes(bytes: Uint8Array) {
     if (isBrowser) {
-      const blob = new Blob([bytes], { type: 'application/javascript' });
+      // cast to any to satisfy Blob typing when different ArrayBuffer types are in play
+      const blob = new Blob([bytes as any], { type: 'application/javascript' });
       const url = URL.createObjectURL(blob);
       const worker = new Worker(url, { type: 'module' });
       setTimeout(() => URL.revokeObjectURL(url), 2000);
@@ -126,7 +127,7 @@ export class CapabilityAwareSandbox {
     };
     async function importPluginFromBytes(bytes) {
       if (typeof Blob !== 'undefined' && typeof URL !== 'undefined') {
-        const blob = new Blob([bytes], { type: 'application/javascript' });
+        const blob = new Blob([bytes as any], { type: 'application/javascript' });
         const url = URL.createObjectURL(blob);
         try { const mod = await import(url); return mod.default || mod; } finally { setTimeout(()=>URL.revokeObjectURL(url), 0); }
       } else {
@@ -161,7 +162,7 @@ export class CapabilityAwareSandbox {
         }
         self.postMessage({ __response_id: id, ok: true, result });
       } catch (err) {
-        self.postMessage({ __response_id: id, ok: false, error: (err && err.message) ? err.message : String(err) });
+        self.postMessage({ __response_id: id, ok: false, error: (err && (err as any).message) ? (err as any).message : String(err) });
       }
     };
     `;
@@ -198,7 +199,7 @@ export class CapabilityAwareSandbox {
     const wrapperSource = await this.buildWrapperSource(pluginBytes, grants);
     const wrapperBytes = (typeof Buffer !== 'undefined') ? Buffer.from(wrapperSource) : new TextEncoder().encode(wrapperSource);
 
-    const workerCtrl = await this.createWorkerFromSourceBytes(wrapperBytes);
+    const workerCtrl = await this.createWorkerFromSourceBytes(wrapperBytes as any);
 
     let nextId = 1;
     const pending = new Map<number, { resolve: (v:any)=>void; reject: (e:any)=>void; timer: any }>();
@@ -215,7 +216,8 @@ export class CapabilityAwareSandbox {
         return;
       }
       if (msg.type === 'hostLog') {
-        console[msg.level ?? 'log'](`[plugin-sandbox]`, msg.message);
+        const level = msg.level ?? 'log';
+        try { (console as any)[level](`[plugin-sandbox]`, msg.message); } catch(e) { console.log('[plugin-sandbox]', msg.message); }
       } else if (msg.type === 'emitEvent') {
         console.log('[plugin event]', msg.name, msg.payload);
       }
