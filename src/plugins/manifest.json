@@ -1,0 +1,10 @@
+{
+  "name": "pdf-tool",
+  "version": "1.2.3",
+  "entry": "index.js",
+  "type": "module",
+  "integrity": "sha256-ehu42CKJn0KY516xkmHlRD6uAJVIPJr+KwAX3mykgJQ=",
+  "metadata": {
+    "description": "PDF manipulation plugin"
+  }
+}
